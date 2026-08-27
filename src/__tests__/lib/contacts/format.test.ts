@@ -1,11 +1,24 @@
 import {
   addressLine,
   avatarHue,
+  formatAddress,
   formatTimestamp,
   initials,
   jobLine,
 } from "@/lib/contacts/format";
+import type { Address } from "@/lib/contacts/types";
 import { makeContact } from "../../mocks/handlers";
+
+const HOME: Address = {
+  id: 1,
+  contact_id: 1,
+  type: "Home",
+  street: "1 Market St",
+  city: "San Francisco",
+  state: "CA",
+  postal_code: "94105",
+  country: "USA",
+};
 
 describe("initials", () => {
   it("takes the first letter of each name", () => {
@@ -46,6 +59,31 @@ describe("jobLine", () => {
     expect(jobLine(makeContact({ company: null }))).toBe("Mathematician");
     expect(jobLine(makeContact({ job_title: null }))).toBe("Analytical Engines");
     expect(jobLine(makeContact({ job_title: null, company: null }))).toBeNull();
+  });
+});
+
+describe("formatAddress", () => {
+  it("joins every part, pairing the state with the postal code", () => {
+    expect(formatAddress(HOME)).toBe("1 Market St, San Francisco, CA 94105, USA");
+  });
+
+  it("skips the parts that are not filled in", () => {
+    expect(formatAddress({ ...HOME, street: null, postal_code: null })).toBe(
+      "San Francisco, CA, USA",
+    );
+  });
+
+  it("returns null when nothing is filled in", () => {
+    expect(
+      formatAddress({
+        ...HOME,
+        street: null,
+        city: null,
+        state: null,
+        postal_code: null,
+        country: null,
+      }),
+    ).toBeNull();
   });
 });
 
