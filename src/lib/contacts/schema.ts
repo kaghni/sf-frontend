@@ -9,6 +9,11 @@ import type { ContactInput } from "./types";
  * and anything it rejects anyway is surfaced by `toFieldErrors` in `./api.ts`.
  */
 
+/** Mirrors the API's photo constraints: an image data URI, ~100 KB encoded. */
+export const PHOTO_MAX_LENGTH = 140_000;
+const PHOTO_DATA_URI =
+  /^data:image\/(png|jpeg|webp|gif);base64,(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)$/;
+
 /** Optional text: trimmed, and blank becomes `null` (the API clears the field). */
 function optionalText(max: number, label: string) {
   return z
@@ -52,6 +57,17 @@ export const contactInputSchema = z.object({
     .transform((value) => value || null)
     .nullable()
     .default(null),
+  photo: z
+    .string()
+    .trim()
+    .max(PHOTO_MAX_LENGTH, "Photo is too large — pick a smaller image")
+    .transform((value) => value || null)
+    .nullable()
+    .default(null)
+    .refine(
+      (value) => value === null || PHOTO_DATA_URI.test(value),
+      "Photo must be a base64 image data URI",
+    ),
 }) satisfies z.ZodType<ContactInput, unknown>;
 
 export type ContactFormValues = z.input<typeof contactInputSchema>;
@@ -218,10 +234,15 @@ export const CONTACT_FIELDS: ContactFieldSpec[] = CONTACT_FIELD_GROUPS.flatMap(
 export function formDataToValues(
   formData: FormData,
 ): Record<keyof ContactInput, string> {
-  return Object.fromEntries(
-    CONTACT_FIELDS.map((field) => [
-      field.name,
-      String(formData.get(field.name) ?? ""),
-    ]),
-  ) as Record<keyof ContactInput, string>;
+  return {
+    ...Object.fromEntries(
+      CONTACT_FIELDS.map((field) => [
+        field.name,
+        String(formData.get(field.name) ?? ""),
+      ]),
+    ),
+    // Owned by PhotoInput's hidden input rather than the Field metadata; it
+    // must ride along on every submit or a PUT edit would wipe the photo.
+    photo: String(formData.get("photo") ?? ""),
+  } as Record<keyof ContactInput, string>;
 }

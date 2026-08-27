@@ -56,6 +56,32 @@ describe("contactInputSchema", () => {
     expect(zodFieldErrors(result.error!).email).toBe("Enter a valid email address");
   });
 
+  it("accepts an image data URI photo and nulls out a blank one", () => {
+    const photo = "data:image/jpeg;base64,dGlueS1mYWtlLWpwZWc=";
+
+    expect(contactInputSchema.parse(values({ photo })).photo).toBe(photo);
+    // Shortest possible padded payload — a single encoded byte.
+    expect(
+      contactInputSchema.parse(values({ photo: "data:image/png;base64,TQ==" }))
+        .photo,
+    ).toBe("data:image/png;base64,TQ==");
+    expect(contactInputSchema.parse(values({ photo: "" })).photo).toBeNull();
+  });
+
+  it("rejects a photo that is not an image data URI", () => {
+    for (const photo of [
+      "not-a-photo",
+      "data:image/png;base64,", // empty payload
+      "data:image/png;base64,!!not-base64!!",
+      "data:text/plain;base64,aGk=", // not an image
+    ]) {
+      const result = contactInputSchema.safeParse(values({ photo }));
+      expect(zodFieldErrors(result.error!).photo).toBe(
+        "Photo must be a base64 image data URI",
+      );
+    }
+  });
+
   it("enforces the API's length limits", () => {
     const result = contactInputSchema.safeParse(
       values({ first_name: "a".repeat(101), postal_code: "9".repeat(21) }),
@@ -79,8 +105,9 @@ describe("formDataToValues", () => {
 
     expect(extracted.first_name).toBe("Grace");
     expect(extracted.last_name).toBe("");
+    // photo is owned by PhotoInput's hidden input, not the Field metadata.
     expect(Object.keys(extracted).sort()).toEqual(
-      CONTACT_FIELDS.map((field) => field.name).sort(),
+      [...CONTACT_FIELDS.map((field) => field.name), "photo"].sort(),
     );
   });
 });
