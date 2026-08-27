@@ -7,7 +7,13 @@ import ContactAvatar from "@/components/contacts/ContactAvatar";
 import DeleteContactButton from "@/components/contacts/DeleteContactButton";
 import { buttonClasses } from "@/components/ui/Button";
 import { getContact } from "@/lib/contacts/api";
-import { addressLine, formatTimestamp, jobLine } from "@/lib/contacts/format";
+import {
+  addressLine,
+  formatAddress,
+  formatTimestamp,
+  jobLine,
+} from "@/lib/contacts/format";
+import { ADDRESS_TYPES } from "@/lib/contacts/types";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -109,6 +115,31 @@ export default async function ContactDetailPage({ params }: PageProps) {
           ) : null}
         </Row>
       </dl>
+
+      {contact.addresses.length > 0 ? (
+        <section className="rounded-lg border border-border bg-card">
+          <h2 className="border-b border-hairline px-4 py-3 text-[13px] font-medium text-foreground">
+            Addresses
+          </h2>
+          <dl>
+            {ADDRESS_TYPES.map((type) => {
+              const addresses = contact.addresses.filter(
+                (address) => address.type === type,
+              );
+              if (!addresses.length) return null;
+              return (
+                <Row key={type} label={type}>
+                  <ul className="space-y-1">
+                    {addresses.map((address) => (
+                      <li key={address.id}>{formatAddress(address)}</li>
+                    ))}
+                  </ul>
+                </Row>
+              );
+            })}
+          </dl>
+        </section>
+      ) : null}
 
       <dl className="rounded-lg border border-border bg-card/50 text-[13px]">
         <Row label="ID">
