@@ -36,6 +36,21 @@ describe("ContactForm", () => {
     expect(screen.getByLabelText(/street address/i)).toHaveValue("");
   });
 
+  it("carries an existing photo through the submit", async () => {
+    // PUT is a full replace, so an edit that drops the photo field would
+    // silently wipe the contact's photo.
+    const photo = "data:image/jpeg;base64,dGlueS1mYWtlLWpwZWc=";
+    const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
+      async () => ({ status: "idle" }),
+    );
+    renderForm(action, makeContact({ photo }));
+
+    await userEvent.click(screen.getByRole("button", { name: /create contact/i }));
+
+    await waitFor(() => expect(action).toHaveBeenCalled());
+    expect(action.mock.calls[0][1].get("photo")).toBe(photo);
+  });
+
   it("submits the entered values to the action", async () => {
     const action = jest.fn<Promise<FormState>, [FormState, FormData]>(
       async () => ({ status: "idle" }),
