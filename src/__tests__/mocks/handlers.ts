@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { apiBaseUrl } from "@/lib/apiClient";
 import type { Contact, ContactPage } from "@/lib/contacts/types";
+import type { Meetup, NearbyCluster } from "@/lib/meetups/types";
 
 /** Prefix a path with the configured API base so handlers match apiClient URLs. */
 export function api(path: string): string {
@@ -51,6 +52,22 @@ export const CONTACTS: Contact[] = [
   }),
 ];
 
+export function makeMeetup(overrides: Partial<Meetup> = {}): Meetup {
+  return {
+    id: 1,
+    title: "San Francisco contacts meetup",
+    city: "San Francisco",
+    starts_at: "2026-08-28T18:00:00.000Z",
+    created_at: "2026-08-26T09:00:00.000Z",
+    guests: CONTACTS,
+    ...overrides,
+  };
+}
+
+export const NEARBY_CLUSTERS: NearbyCluster[] = [
+  { city: "San Francisco", contact_ids: [1, 2], contact_count: 2 },
+];
+
 export const handlers = [
   http.get(api("/health"), () =>
     HttpResponse.json({ status: "ok", database: "sqlite", contacts: 2 }),
@@ -90,4 +107,21 @@ export const handlers = [
   }),
 
   http.delete(api("/api/v1/contacts/:id"), () => new HttpResponse(null, { status: 204 })),
+
+  // `nearby` must come before `:id`, or it would be read as a meetup id.
+  http.get(api("/api/v1/meetups/nearby"), () => HttpResponse.json(NEARBY_CLUSTERS)),
+
+  http.get(api("/api/v1/meetups/:id"), ({ params }) =>
+    Number(params.id) === 1
+      ? HttpResponse.json(makeMeetup())
+      : HttpResponse.json(
+          { detail: `Meetup ${params.id} not found` },
+          { status: 404 },
+        ),
+  ),
+
+  http.post(api("/api/v1/meetups"), async ({ request }) => {
+    const body = (await request.json()) as Partial<Meetup>;
+    return HttpResponse.json(makeMeetup({ ...body, id: 7 }), { status: 201 });
+  }),
 ];
