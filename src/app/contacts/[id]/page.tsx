@@ -131,7 +131,11 @@ export default async function ContactDetailPage({ params }: PageProps) {
                 <Row key={type} label={type}>
                   <ul className="space-y-1">
                     {addresses.map((address) => (
-                      <li key={address.id}>{formatAddress(address)}</li>
+                      <li key={address.id}>
+                        {formatAddress(address) ?? (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
+                      </li>
                     ))}
                   </ul>
                 </Row>
