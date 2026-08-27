@@ -12,13 +12,16 @@ import type { Meetup } from "@/lib/meetups/types";
 const UNREACHABLE =
   "Could not reach the Contacts API. Check that the backend is running.";
 
-/** The coming Friday at 18:00 in the server's zone; a week out if today is Friday. */
+/**
+ * The coming Friday at 18:00 UTC; a week out if today is Friday. UTC on
+ * purpose: the event page labels times as UTC, so the default must be
+ * computed in the same zone regardless of where the server runs.
+ */
 function nextFridayEvening(now = new Date()): Date {
-  const date = new Date(now);
-  const daysAhead = (5 - date.getDay() + 7) % 7 || 7;
-  date.setDate(date.getDate() + daysAhead);
-  date.setHours(18, 0, 0, 0);
-  return date;
+  const daysAhead = (5 - now.getUTCDay() + 7) % 7 || 7;
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysAhead, 18),
+  );
 }
 
 /**

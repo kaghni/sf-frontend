@@ -44,8 +44,10 @@ export default async function MeetupPage({ params }: PageProps) {
   if (!meetup) notFound();
 
   const guestCount = meetup.guests.length;
+  // Encode each address: "+" and other reserved characters are valid in
+  // emails but would be mangled inside a query string.
   const inviteHref = `mailto:?bcc=${meetup.guests
-    .map((guest) => guest.email)
+    .map((guest) => encodeURIComponent(guest.email))
     .join(",")}&subject=${encodeURIComponent(meetup.title)}`;
 
   return (
